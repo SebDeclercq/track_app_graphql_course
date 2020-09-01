@@ -109,6 +109,24 @@ class GQLClient:
         )
 
     @classmethod
+    def delete_track(cls, jwt: str, track_id: int) -> Dict[str, Any]:
+        query: Document = gql(
+            '''
+            mutation($trackId: Int!) {
+                deleteTrack(trackId: $trackId) {
+                    trackId
+                }
+            }
+            '''
+        )
+        return cls._get_client(cls.auth(jwt)).execute(
+            query,
+            variable_values={
+                'trackId': track_id,
+            },
+        )
+
+    @classmethod
     def auth(cls, jwt: str) -> Dict[str, str]:
         return {'Authorization': f'JWT {jwt}'}
 
@@ -121,13 +139,19 @@ def main() -> None:
     url: str = 'http://...'
     resp: Dict[str, Any] = GQLClient.create_track(jwt, title, desc, url)
     track: Dict[str, Any] = resp['createTrack']['track']
-    assert track.get('title') == title
-    assert track.get('description') == desc
+    assert track['title'] == title
+    assert track['description'] == desc
     title = 'it was badly named :-O'
     desc = 'now I could say more but I dunno what to say'
     url = 'https://...'
-    resp = GQLClient.update_track(jwt, track.get('id'), title, desc, url)
-    print(resp['updateTrack']['track'])
+    resp = GQLClient.update_track(jwt, track['id'], title, desc, url)
+    track = resp['updateTrack']['track']
+    assert track['title'] == title
+    assert track['description'] == desc
+    print(track)
+    resp = GQLClient.delete_track(jwt, track['id'])
+    track_id = resp['deleteTrack']['trackId']
+    assert track_id == int(track['id'])
 
 
 if __name__ == '__main__':

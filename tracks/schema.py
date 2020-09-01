@@ -80,6 +80,25 @@ class UpdateTrack(graphene.Mutation):
         return UpdateTrack(track=track)
 
 
+class DeleteTrack(graphene.Mutation):
+    track_id: graphene.Int = graphene.Int()
+
+    class Arguments:
+        track_id = graphene.Int(required=True)
+
+    def mutate(self, info: ResolveInfo, track_id: int) -> DeleteTrack:
+        if info.context is not None:
+            user: User = info.context.user
+        track: Track = Track.objects.get(pk=track_id)
+        if track.posted_by != user:
+            raise PermissionDenied(
+                "Not permitted to delete someone else's track"
+            )
+        track.delete()
+        return DeleteTrack(track_id=track_id)
+
+
 class Mutation(graphene.ObjectType):
     create_track: graphene.Field = CreateTrack.Field()
     update_track: graphene.Field = UpdateTrack.Field()
+    delete_track: graphene.Field = DeleteTrack.Field()
