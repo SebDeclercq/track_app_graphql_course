@@ -1,4 +1,7 @@
 from __future__ import annotations
+from typing import Optional
+from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.db.models.manager import BaseManager
 from graphql.execution.base import ExecutionResult, ResolveInfo
 from graphene_django import DjangoObjectType
@@ -35,12 +38,48 @@ class CreateTrack(graphene.Mutation):
     def mutate(
         self, info: ResolveInfo, title: str, description: str, url: str
     ) -> CreateTrack:
+        if info.context is not None:
+            user: User = info.context.user
+        if user.is_anonymous:
+            raise PermissionDenied('Anonymous user not allowed to add tracks')
         track: Track
         track, _ = Track.objects.get_or_create(
-            title=title, description=description, url=url
+            title=title, description=description, url=url, posted_by=user
         )
         return CreateTrack(track=track)
 
 
+class UpdateTrack(graphene.Mutation):
+    track: graphene.Field = graphene.Field(TrackType)
+
+    class Arguments:
+        track_id = graphene.Int(required=True)
+        title = graphene.String(description='the description for title')
+        description = graphene.String(description='the description for desc')
+        url = graphene.String(description='the description for title')
+
+    def mutate(
+        self,
+        info: ResolveInfo,
+        track_id: int,
+        title: str,
+        description: str,
+        url: str,
+    ):
+        if info.context is not None:
+            user: User = info.context.user
+        track: Track = Track.objects.get(pk=track_id)
+        if track.posted_by != user:
+            raise PermissionDenied(
+                "Not permitted to update someone else's track"
+            )
+        track.title = title
+        track.description = description
+        track.url = url
+        track.save()
+        return UpdateTrack(track=track)
+
+
 class Mutation(graphene.ObjectType):
     create_track: graphene.Field = CreateTrack.Field()
+    update_track: graphene.Field = UpdateTrack.Field()
