@@ -1,0 +1,25 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+graphene-stubs = "*"
+mypy = "*"
+flake8 = "*"
+black = "*"
+django-stubs = "*"
+
+[packages]
+graphene = "*"
+django = "*"
+graphene-django = "*"
+django-graphql-jwt = "*"
+django-cors-headers = "*"
+gql = "*"
+
+[requires]
+python_version = "3.8"
+
+[pipenv]
+allow_prereleases = true
