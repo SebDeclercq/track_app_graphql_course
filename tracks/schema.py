@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.db.models.manager import BaseManager
 from graphql import GraphQLError
 from graphql.execution.base import ExecutionResult, ResolveInfo
@@ -27,14 +28,24 @@ class LikeType(DjangoObjectType):
 
 
 class Query(graphene.ObjectType):
-    tracks: graphene.List = graphene.List(TrackType)
+    tracks: graphene.List = graphene.List(TrackType, search=graphene.String())
     likes: graphene.List = graphene.List(LikeType)
+    track: graphene.Field = graphene.Field(TrackType, track_id=graphene.Int())
 
-    def resolve_tracks(self, info: ResolveInfo) -> BaseManager[Track]:
+    def resolve_tracks(
+        self, info: ResolveInfo, search: Optional[str] = None
+    ) -> BaseManager[Track]:
+        if search is not None:
+            return Track.objects.filter(
+                Q(title__icontains=search) | Q(description__icontains=search)
+            )
         return Track.objects.all()
 
     def resolve_likes(self, info: ResolveInfo) -> BaseManager[Like]:
         return Like.objects.all()
+
+    def resolve_track(self, info: ResolveInfo, track_id: int) -> Track:
+        return Track.objects.get(pk=track_id)
 
 
 class CreateTrack(graphene.Mutation):
