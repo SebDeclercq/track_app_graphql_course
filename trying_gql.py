@@ -127,6 +127,26 @@ class GQLClient:
         )
 
     @classmethod
+    def add_like(cls, jwt: str, track_id: int) -> Dict[str, Any]:
+        query: Document = gql(
+            '''
+            mutation($trackId: Int!) {
+                createLike(trackId: $trackId) {
+                    track {
+                        id
+                    }
+                    user {
+                        username
+                    }
+                }
+            }
+            '''
+        )
+        return cls._get_client(cls.auth(jwt)).execute(
+            query, variable_values={'trackId': track_id}
+        )
+
+    @classmethod
     def auth(cls, jwt: str) -> Dict[str, str]:
         return {'Authorization': f'JWT {jwt}'}
 
@@ -148,7 +168,12 @@ def main() -> None:
     track = resp['updateTrack']['track']
     assert track['title'] == title
     assert track['description'] == desc
-    print(track)
+    track_id = track['id']
+    resp = GQLClient.add_like(jwt, track_id)
+    track = resp['createLike']['track']
+    user = resp['createLike']['user']
+    assert track['id'] == track_id
+    assert user['username'] == 'sdq'
     resp = GQLClient.delete_track(jwt, track['id'])
     track_id = resp['deleteTrack']['trackId']
     assert track_id == int(track['id'])

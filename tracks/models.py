@@ -10,3 +10,12 @@ class Track(models.Model):
     posted_by: models.ForeignKey = models.ForeignKey(
         get_user_model(), null=True, on_delete=models.CASCADE
     )
+
+
+class Like(models.Model):
+    user: models.ForeignKey = models.ForeignKey(
+        get_user_model(), related_name='likes', on_delete=models.CASCADE
+    )
+    track: models.ForeignKey = models.ForeignKey(
+        Track, related_name='likes', on_delete=models.CASCADE
+    )
