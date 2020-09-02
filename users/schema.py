@@ -2,9 +2,9 @@ from __future__ import annotations
 from typing import Sequence
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
 from django.db.models.manager import BaseManager
 from graphene_django import DjangoObjectType
+from graphql import GraphQLError
 from graphql.execution.base import ResolveInfo
 import graphene
 
@@ -32,7 +32,7 @@ class Query(graphene.ObjectType):
         if info.context is not None:
             user: User = info.context.user
         if user.is_anonymous:
-            raise PermissionDenied('Anonymous user not allowed')
+            raise GraphQLError('Anonymous user not allowed')
         return user
 
 

@@ -1,8 +1,8 @@
 from __future__ import annotations
 from typing import Optional
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
 from django.db.models.manager import BaseManager
+from graphql import GraphQLError
 from graphql.execution.base import ExecutionResult, ResolveInfo
 from graphene_django import DjangoObjectType
 import graphene
@@ -54,7 +54,7 @@ class CreateTrack(graphene.Mutation):
         if info.context is not None:
             user: User = info.context.user
         if user.is_anonymous:
-            raise PermissionDenied('Anonymous user not allowed to add tracks')
+            raise GraphQLError('Anonymous user not allowed to add tracks')
         track: Track
         track, _ = Track.objects.get_or_create(
             title=title, description=description, url=url, posted_by=user
@@ -83,9 +83,7 @@ class UpdateTrack(graphene.Mutation):
             user: User = info.context.user
         track: Track = Track.objects.get(pk=track_id)
         if track.posted_by != user:
-            raise PermissionDenied(
-                "Not permitted to update someone else's track"
-            )
+            raise GraphQLError("Not permitted to update someone else's track")
         track.title = title
         track.description = description
         track.url = url
@@ -104,9 +102,7 @@ class DeleteTrack(graphene.Mutation):
             user: User = info.context.user
         track: Track = Track.objects.get(pk=track_id)
         if track.posted_by != user:
-            raise PermissionDenied(
-                "Not permitted to delete someone else's track"
-            )
+            raise GraphQLError("Not permitted to delete someone else's track")
         track.delete()
         return DeleteTrack(track_id=track_id)
 
@@ -122,7 +118,7 @@ class CreateLike(graphene.Mutation):
         if info.context is not None:
             user: User = info.context.user
         if user.is_anonymous:
-            raise PermissionDenied('Anonymous user not allowed to like tracks')
+            raise GraphQLError('Anonymous user not allowed to like tracks')
         track: Track = Track.objects.get(pk=track_id)
         Like.objects.create(user=user, track=track)
         return CreateLike(user=user, track=track)
